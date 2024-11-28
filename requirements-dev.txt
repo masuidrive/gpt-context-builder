@@ -1,0 +1,16 @@
+-r requirements.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+tox>=4.0.0
+
+# Linting and formatting
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.0.0
+
+# Build and distribution
+build>=0.10.0
+twine>=4.0.0
+wheel>=0.40.0

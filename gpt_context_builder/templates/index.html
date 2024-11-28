@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPT Context Builder</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .file-tree {
+            flex: 1;
+            max-width: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: calc(100vh - 40px);
+        }
+        
+        .tree-content {
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .output-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            height: calc(100vh - 40px);
+        }
+        
+        .tree-item {
+            margin: 5px 0;
+        }
+        
+        .tree-item label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .children {
+            margin-left: 20px;
+        }
+        
+        .directory > .tree-item > label {
+            font-weight: bold;
+        }
+        
+        textarea {
+            flex: 1;
+            width: 100%;
+            font-family: monospace;
+            padding: 10px;
+            resize: none;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .format-selector {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-left: auto;
+        }
+        
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .directory-label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .token-count {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .copy-status {
+            color: #4CAF50;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .copy-status.show {
+            opacity: 1;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .app-description {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="file-tree">
+        <div class="app-description">
+            Select files to create a formatted context block for ChatGPT.
+            Track token count and choose between XML or code block format.
+        </div>
+        <button onclick="selectAll()">Select All</button>
+        <div class="tree-content" id="fileTree"></div>
+    </div>
+    <div class="output-section">
+        <div class="button-container">
+            <button onclick="copyToClipboard()">Copy to Clipboard</button>
+            <span id="copyStatus" class="copy-status">Copied!</span>
+            <div class="format-selector">
+                <div class="format-option">
+                    <input type="radio" id="xmlFormat" name="format" value="xml" checked onchange="generateContent()">
+                    <label for="xmlFormat">XML Format</label>
+                </div>
+                <div class="format-option">
+                    <input type="radio" id="codeblockFormat" name="format" value="codeblock" onchange="generateContent()">
+                    <label for="codeblockFormat">Code Block</label>
+                </div>
+            </div>
+        </div>
+        <div class="token-count" id="tokenCount">Tokens: 0</div>
+        <textarea id="output" readonly></textarea>
+    </div>
+
+    <script>
+        async function loadFileTree() {
+            try {
+                const response = await fetch('/files');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Files data:', data);
+                const treeContainer = document.getElementById('fileTree');
+                treeContainer.innerHTML = renderTree(data);
+                
+                // Add click handlers for directories
+                document.querySelectorAll('.directory-label').forEach(label => {
+                    label.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const directory = label.closest('.directory');
+                        const checkboxes = directory.querySelectorAll('input[type="checkbox"]');
+                        const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+                        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                        
+                        // If some or none are checked, check all. If all are checked, uncheck all
+                        const newState = !allChecked;
+                        checkboxes.forEach(cb => {
+                            cb.checked = newState;
+                        });
+                        generateContent();
+                    });
+                });
+
+                // Add change handlers for checkboxes
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', generateContent);
+                });
+            } catch (error) {
+                console.error('Error loading file tree:', error);
+                document.getElementById('fileTree').innerHTML = `<div class="error">Error loading files: ${error.message}</div>`;
+            }
+        }
+
+        function renderTree(items) {
+            if (!Array.isArray(items)) {
+                console.error('Invalid items:', items);
+                return '';
+            }
+            return items.map(item => {
+                if (item.type === 'directory') {
+                    return `
+                        <div class="directory">
+                            <div class="tree-item">
+                                <span class="directory-label">📁 ${item.name}</span>
+                            </div>
+                            <div class="children">
+                                ${renderTree(item.children || [])}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="tree-item">
+                            <label>
+                                <input type="checkbox" data-path="${item.path}">
+                                📄 ${item.name}
+                            </label>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            generateContent();
+        }
+
+        function getSelectedFormat() {
+            return document.querySelector('input[name="format"]:checked').value;
+        }
+
+        async function generateContent() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            const output = document.getElementById('output');
+            let content = '';
+            const format = getSelectedFormat();
+
+            for (const checkbox of checkboxes) {
+                const filepath = checkbox.dataset.path;
+                const response = await fetch(`/file/${filepath}`);
+                const data = await response.json();
+                
+                if (data.content) {
+                    if (format === 'xml') {
+                        content += `<content filename="${filepath}">\n`;
+                        content += data.content;
+                        content += '\n</content>\n\n';
+                    } else {
+                        content += '```' + filepath + '\n';
+                        content += data.content;
+                        content += '\n```\n\n';
+                    }
+                }
+            }
+
+            output.value = content;
+            updateTokenCount(content);
+        }
+
+        async function updateTokenCount(text) {
+            try {
+                const response = await fetch('/count_tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await response.json();
+                document.getElementById('tokenCount').textContent = `Tokens: ${data.count}`;
+            } catch (error) {
+                console.error('Error counting tokens:', error);
+                document.getElementById('tokenCount').textContent = 'Token count failed';
+            }
+        }
+
+        async function copyToClipboard() {
+            const output = document.getElementById('output');
+            await navigator.clipboard.writeText(output.value);
+            
+            const status = document.getElementById('copyStatus');
+            status.classList.add('show');
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 2000);
+        }
+
+        loadFileTree();
+    </script>
+</body>
+</html>

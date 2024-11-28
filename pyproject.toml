@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpt_context_builder"
+version = "1.0.0"
+description = "A tool to build GPT context."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Yuichiro Masui", email = "masui@masuidrive.jp"}
+]
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/masuidrive/gpt-context-builder"
+Repository = "https://github.com/masuidrive/gpt-context-builder.git"
+
+[project.scripts]
+gpt-context-builder = "gpt_context_builder.cli:main"
+
+[tool.setuptools]
+packages = ["gpt_context_builder"]
+
+[tool.setuptools.package-data]
+gpt_context_builder = ["templates/*"]
