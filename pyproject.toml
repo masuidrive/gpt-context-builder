@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gpt_context_builder"
-version = "1.0.0"
+version = "1.0.1"
 description = "A tool to build GPT context."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -12,10 +12,29 @@ authors = [
     {name = "Yuichiro Masui", email = "masui@masuidrive.jp"}
 ]
 requires-python = ">=3.6"
+dependencies = [
+    "flask>=2.0.0",
+    "pathspec>=0.9.0",
+    "tiktoken>=0.3.0",
+    "click>=8.0.0"
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "tox>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "isort>=5.0.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
+    "wheel>=0.40.0"
 ]
 
 [project.urls]

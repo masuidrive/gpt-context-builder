@@ -2,7 +2,7 @@
 
 A web-based tool for creating context blocks for ChatGPT from local files.
 
-![screenshot](screenshot.png)
+![screenshot](https://github.com/masuidrive/gpt-context-builder/blob/main/screenshot.png?raw=true)
 
 ## Features
 
