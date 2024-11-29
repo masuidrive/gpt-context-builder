@@ -94,16 +94,7 @@ def create_app():
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
 
-            # 出力フォーマットに応じて処理を変える
-            output_format = request.args.get('format', 'xml')  # デフォルトはxml
-            
-            if output_format == 'code':
-                # コードブロックの場合は何もエスケープしない
-                return jsonify({'content': content})
-            else:
-                # XMLフォーマットの場合は < > のみをエスケープ
-                content = content.replace('<', '&lt;').replace('>', '&gt;')
-                return jsonify({'content': content})
+            return jsonify({'content': content})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 

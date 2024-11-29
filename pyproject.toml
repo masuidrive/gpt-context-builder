@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gpt_context_builder"
-version = "1.0.1"
+version = "1.0.2"
 description = "A tool to build GPT context."
 readme = "README.md"
 license = {file = "LICENSE"}
